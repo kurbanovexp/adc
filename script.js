@@ -2,6 +2,7 @@ let session;
 let video;
 let canvas;
 let ctx;
+let isProcessing = false;
 
 async function init() {
     video = document.createElement('video');
@@ -26,15 +27,24 @@ async function init() {
 }
 
 async function detectFrame() {
-    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    if (video.readyState === video.HAVE_ENOUGH_DATA && !isProcessing) {
+        isProcessing = true;
+        
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         const tensor = preprocess(canvas);
         const feeds = { images: tensor };
-        const results = await session.run(feeds);
-        console.log(results);
+        
+        try {
+            const results = await session.run(feeds);
+            console.log(results);
+        } catch (err) {
+            console.error(err);
+        }
+        
+        isProcessing = false;
     }
 
     requestAnimationFrame(detectFrame);
