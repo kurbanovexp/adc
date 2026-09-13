@@ -4,15 +4,22 @@ let canvas;
 let ctx;
 let isProcessing = false;
 
-const classNames = ["Класс 0", "Класс 1", "Класс 2"]; 
+const classNames = {
+    0: "0_crack",
+    1: "1_deformation",
+    2: "2_scratch_gouge_paint_erosion",
+    4: "4_missing_fastener"
+};
 
 document.getElementById('downloadBtn').addEventListener('click', async () => {
     const downloadBtn = document.getElementById('downloadBtn');
     const progressDiv = document.getElementById('progress');
     const startBtn = document.getElementById('startBtn');
+    const statusBox = document.getElementById('status-box');
 
     downloadBtn.style.display = 'none';
     progressDiv.style.display = 'block';
+    statusBox.innerText = "Статус: Скачивание модели...";
 
     try {
         const response = await fetch('./model/yolo26n-cls.onnx');
@@ -20,7 +27,6 @@ document.getElementById('downloadBtn').addEventListener('click', async () => {
         
         let buffer;
         if (!contentLength) {
-            progressDiv.textContent = "Скачивание модели...";
             buffer = await response.arrayBuffer();
         } else {
             const total = parseInt(contentLength, 10);
@@ -46,13 +52,16 @@ document.getElementById('downloadBtn').addEventListener('click', async () => {
             buffer = buffer.buffer;
         }
 
+        statusBox.innerText = "Статус: Инициализация модели...";
         progressDiv.textContent = "Инициализация...";
         session = await ort.InferenceSession.create(buffer, { executionProviders: ['wasm'] });
         
         progressDiv.style.display = 'none';
         startBtn.style.display = 'inline-block';
+        statusBox.innerText = "Статус: Модель загружена. Нажмите 'Открыть камеру'";
     } catch (err) {
         progressDiv.textContent = "Ошибка: " + err.message;
+        statusBox.innerText = "Статус: Ошибка загрузки модели";
         console.error(err);
     }
 });
@@ -60,6 +69,8 @@ document.getElementById('downloadBtn').addEventListener('click', async () => {
 document.getElementById('startBtn').addEventListener('click', async () => {
     document.getElementById('startBtn').style.display = 'none';
     document.getElementById('canvas').style.display = 'inline-block';
+    document.getElementById('classes-container').style.display = 'inline-block';
+    document.getElementById('status-box').innerText = "Статус: Камера запускается...";
     await initCamera();
 });
 
@@ -87,6 +98,7 @@ async function initCamera() {
         };
     });
 
+    document.getElementById('status-box').innerText = "Статус: Модель работает (детекция)";
     detectFrame();
 }
 
@@ -110,22 +122,18 @@ async function detectFrame() {
             const output = results[outputName];
             const data = output.data;
 
-            let maxProb = -1;
-            let maxClassId = -1;
+            let htmlContent = "";
             for (let i = 0; i < data.length; i++) {
-                if (data[i] > maxProb) {
-                    maxProb = data[i];
-                    maxClassId = i;
-                }
+                const className = classNames[i] || `Класс ${i}`;
+                const confidence = (data[i] * 100).toFixed(1);
+                htmlContent += `<div class="class-row"><span>${className}:</span> <strong>${confidence}%</strong></div>`;
             }
 
-            const className = classNames[maxClassId] || `Class ${maxClassId}`;
-            
-            // Вывод текста в специальный блок под кнопкой/видео на странице
-            document.getElementById('result-box').innerText = `${className}: ${(maxProb * 100).toFixed(1)}%`;
+            document.getElementById('classes-container').innerHTML = htmlContent;
 
         } catch (err) {
             console.error(err);
+            document.getElementById('status-box').innerText = "Статус: Ошибка инференса";
         }
         
         await new Promise(resolve => setTimeout(resolve, 80));
