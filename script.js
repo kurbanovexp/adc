@@ -145,19 +145,19 @@ async function detectFrame() {
 
 function preprocess(canvasElement) {
     const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = 640;
-    tempCanvas.height = 640;
+    tempCanvas.width = 224;
+    tempCanvas.height = 224;
     const tempCtx = tempCanvas.getContext('2d');
     
     tempCtx.filter = 'grayscale(100%)';
-    tempCtx.drawImage(canvasElement, 0, 0, 640, 640);
+    tempCtx.drawImage(canvasElement, 0, 0, 224, 224);
     
-    const imgData = tempCtx.getImageData(0, 0, 640, 640);
+    const imgData = tempCtx.getImageData(0, 0, 224, 224);
     const data = imgData.data;
 
-    const red = new Float32Array(640 * 640);
-    const green = new Float32Array(640 * 640);
-    const blue = new Float32Array(640 * 640);
+    const red = new Float32Array(224 * 224);
+    const green = new Float32Array(224 * 224);
+    const blue = new Float32Array(224 * 224);
 
     for (let i = 0; i < data.length; i += 4) {
         const idx = i / 4;
@@ -166,10 +166,10 @@ function preprocess(canvasElement) {
         blue[idx] = data[i + 2] / 255.0;
     }
 
-    const inputData = new Float32Array(3 * 640 * 640);
+    const inputData = new Float32Array(3 * 224 * 224);
     inputData.set(red, 0);
-    inputData.set(green, 640 * 640);
-    inputData.set(blue, 2 * 640 * 640);
+    inputData.set(green, 224 * 224);
+    inputData.set(blue, 2 * 224 * 224);
 
-    return new ort.Tensor('float32', inputData, [1, 3, 640, 640]);
+    return new ort.Tensor('float32', inputData, [1, 3, 224, 224]);
 }
