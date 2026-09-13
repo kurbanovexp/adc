@@ -57,6 +57,7 @@ document.getElementById('downloadBtn').addEventListener('click', async () => {
 
 document.getElementById('startBtn').addEventListener('click', async () => {
     document.getElementById('startBtn').style.display = 'none';
+    document.getElementById('canvas').style.display = 'inline-block';
     await initCamera();
 });
 
@@ -94,7 +95,6 @@ async function detectFrame() {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         
-        // Накладываем фильтр серого и на отображаемый холст тоже
         ctx.filter = 'grayscale(100%)';
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         ctx.filter = 'none';
@@ -109,6 +109,7 @@ async function detectFrame() {
             console.error(err);
         }
         
+        await new Promise(resolve => setTimeout(resolve, 80));
         isProcessing = false;
     }
 
