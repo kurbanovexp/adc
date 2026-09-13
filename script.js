@@ -4,6 +4,9 @@ let canvas;
 let ctx;
 let isProcessing = false;
 
+// Список классов (замените на свои, если у вашей модели другая номенклатура)
+const classNames = ["Класс 0", "Класс 1", "Класс 2"]; 
+
 document.getElementById('downloadBtn').addEventListener('click', async () => {
     const downloadBtn = document.getElementById('downloadBtn');
     const progressDiv = document.getElementById('progress');
@@ -104,7 +107,25 @@ async function detectFrame() {
         
         try {
             const results = await session.run(feeds);
-            console.log(results);
+            const outputName = session.outputNames[0];
+            const output = results[outputName];
+            const data = output.data;
+
+            let maxProb = -1;
+            let maxClassId = -1;
+            for (let i = 0; i < data.length; i++) {
+                if (data[i] > maxProb) {
+                    maxProb = data[i];
+                    maxClassId = i;
+                }
+            }
+
+            const className = classNames[maxClassId] || `Class ${maxClassId}`;
+            
+            ctx.fillStyle = 'lime';
+            ctx.font = 'bold 22px Arial';
+            ctx.fillText(`${className}: ${(maxProb * 100).toFixed(1)}%`, 20, 40);
+
         } catch (err) {
             console.error(err);
         }
