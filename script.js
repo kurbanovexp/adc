@@ -93,7 +93,11 @@ async function detectFrame() {
         
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
+        
+        // Накладываем фильтр серого и на отображаемый холст тоже
+        ctx.filter = 'grayscale(100%)';
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        ctx.filter = 'none';
 
         const tensor = preprocess(canvas);
         const feeds = { images: tensor };
@@ -116,6 +120,8 @@ function preprocess(canvasElement) {
     tempCanvas.width = 640;
     tempCanvas.height = 640;
     const tempCtx = tempCanvas.getContext('2d');
+    
+    tempCtx.filter = 'grayscale(100%)';
     tempCtx.drawImage(canvasElement, 0, 0, 640, 640);
     
     const imgData = tempCtx.getImageData(0, 0, 640, 640);
