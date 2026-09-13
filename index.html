@@ -1,15 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YOLO Webcam Detection</title>
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+        button {
+            font-size: 18px;
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+            max-width: 320px;
+        }
+        button:active {
+            background: #0056b3;
+        }
+        #progress {
+            font-size: 16px;
+            margin-top: 15px;
+            color: #333;
+        }
+        canvas {
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            border-radius: 8px;
+            margin-top: 15px;
+            background: #000;
+        }
+    </style>
 </head>
 <body>
-    <button id="startBtn" style="font-size: 20px; padding: 10px 20px;">Запустить камеру</button>
-    <div id="progress" style="display: none; font-size: 18px; margin-top: 10px;">Загрузка модели: 0%</div>
-    <br><br>
-    <canvas id="canvas" width="640" height="640"></canvas>
+    <button id="downloadBtn">Скачать модель</button>
+    <div id="progress" style="display: none;">Загрузка: 0%</div>
+    
+    <button id="startBtn" style="display: none;">Включить камеру</button>
+    <br>
+    <canvas id="canvas"></canvas>
+    
     <script src="script.js"></script>
 </body>
 </html>
