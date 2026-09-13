@@ -4,41 +4,22 @@ let canvas;
 let ctx;
 let isProcessing = false;
 
-document.getElementById('startBtn').addEventListener('click', async () => {
-    document.getElementById('startBtn').style.display = 'none';
-    document.getElementById('progress').style.display = 'block';
-    await init();
-});
-
-async function init() {
-    video = document.createElement('video');
-    video.autoplay = true;
-    video.playsInline = true;
-
-    canvas = document.getElementById('canvas');
-    ctx = canvas.getContext('2d');
-
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 640 } });
-    video.srcObject = stream;
-    
-    await new Promise((resolve) => {
-        video.onloadedmetadata = () => {
-            video.play();
-            resolve();
-        };
-    });
-
+document.getElementById('downloadBtn').addEventListener('click', async () => {
+    const downloadBtn = document.getElementById('downloadBtn');
     const progressDiv = document.getElementById('progress');
-    
+    const startBtn = document.getElementById('startBtn');
+
+    downloadBtn.style.display = 'none';
+    progressDiv.style.display = 'block';
+
     try {
         const response = await fetch('./model/yolo26n-cls.onnx');
         const contentLength = response.headers.get('content-length');
         
+        let buffer;
         if (!contentLength) {
-            progressDiv.textContent = "Загрузка модели...";
-            const buffer = await response.arrayBuffer();
-            progressDiv.textContent = "Инициализация...";
-            session = await ort.InferenceSession.create(buffer, { executionProviders: ['wasm'] });
+            progressDiv.textContent = "Скачивание модели...";
+            buffer = await response.arrayBuffer();
         } else {
             const total = parseInt(contentLength, 10);
             let loaded = 0;
@@ -51,26 +32,59 @@ async function init() {
                 chunks.push(value);
                 loaded += value.length;
                 const percent = Math.round((loaded / total) * 100);
-                progressDiv.textContent = `Загрузка модели: ${percent}%`;
+                progressDiv.textContent = `Скачивание: ${percent}%`;
             }
 
-            const buffer = new Uint8Array(loaded);
+            buffer = new Uint8Array(loaded);
             let position = 0;
             for (let chunk of chunks) {
                 buffer.set(chunk, position);
                 position += chunk.length;
             }
-
-            progressDiv.textContent = "Инициализация модели...";
-            session = await ort.InferenceSession.create(buffer.buffer, { executionProviders: ['wasm'] });
+            buffer = buffer.buffer;
         }
+
+        progressDiv.textContent = "Инициализация...";
+        session = await ort.InferenceSession.create(buffer, { executionProviders: ['wasm'] });
         
         progressDiv.style.display = 'none';
-        detectFrame();
+        startBtn.style.display = 'inline-block';
     } catch (err) {
-        progressDiv.textContent = "Ошибка загрузки: " + err.message;
+        progressDiv.textContent = "Ошибка: " + err.message;
         console.error(err);
     }
+});
+
+document.getElementById('startBtn').addEventListener('click', async () => {
+    document.getElementById('startBtn').style.display = 'none';
+    await initCamera();
+});
+
+async function initCamera() {
+    video = document.createElement('video');
+    video.autoplay = true;
+    video.playsInline = true;
+
+    canvas = document.getElementById('canvas');
+    ctx = canvas.getContext('2d');
+
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+            facingMode: 'environment',
+            width: { ideal: 640 }, 
+            height: { ideal: 640 } 
+        } 
+    });
+    video.srcObject = stream;
+    
+    await new Promise((resolve) => {
+        video.onloadedmetadata = () => {
+            video.play();
+            resolve();
+        };
+    });
+
+    detectFrame();
 }
 
 async function detectFrame() {
