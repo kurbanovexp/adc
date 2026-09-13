@@ -4,12 +4,16 @@ let canvas;
 let ctx;
 
 async function init() {
-    video = document.getElementById('webcam');
+    video = document.createElement('video');
+    video.autoplay = true;
+    video.playsInline = true;
+
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext('2d');
 
     const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 640 } });
     video.srcObject = stream;
+    
     await new Promise((resolve) => {
         video.onloadedmetadata = () => {
             video.play();
@@ -22,8 +26,28 @@ async function init() {
 }
 
 async function detectFrame() {
-    ctx.drawImage(video, 0, 0, 640, 640);
-    const imgData = ctx.getImageData(0, 0, 640, 640);
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const tensor = preprocess(canvas);
+        const feeds = { images: tensor };
+        const results = await session.run(feeds);
+        console.log(results);
+    }
+
+    requestAnimationFrame(detectFrame);
+}
+
+function preprocess(canvasElement) {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = 640;
+    tempCanvas.height = 640;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.drawImage(canvasElement, 0, 0, 640, 640);
+    
+    const imgData = tempCtx.getImageData(0, 0, 640, 640);
     const data = imgData.data;
 
     const red = new Float32Array(640 * 640);
@@ -42,12 +66,7 @@ async function detectFrame() {
     inputData.set(green, 640 * 640);
     inputData.set(blue, 2 * 640 * 640);
 
-    const tensor = new ort.Tensor('float32', inputData, [1, 3, 640, 640]);
-    const feeds = { images: tensor };
-    const results = await session.run(feeds);
-    console.log(results);
-
-    requestAnimationFrame(detectFrame);
+    return new ort.Tensor('float32', inputData, [1, 3, 640, 640]);
 }
 
 init();
