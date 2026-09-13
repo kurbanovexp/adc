@@ -1,37 +1,28 @@
 let session;
+let video;
+let canvas;
+let ctx;
 
-async function loadModel() {
+async function init() {
+    video = document.getElementById('webcam');
+    canvas = document.getElementById('canvas');
+    ctx = canvas.getContext('2d');
+
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 640 } });
+    video.srcObject = stream;
+    await new Promise((resolve) => {
+        video.onloadedmetadata = () => {
+            video.play();
+            resolve();
+        };
+    });
+
     session = await ort.InferenceSession.create('./model/yolo26n-cls.onnx', { executionProviders: ['wasm'] });
+    detectFrame();
 }
 
-loadModel();
-
-document.getElementById('imageInput').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const img = new Image();
-    img.src = URL.createObjectURL(file);
-    img.onload = async () => {
-        const canvas = document.getElementById('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        const tensor = preprocess(img);
-        const feeds = { images: tensor };
-        const results = await session.run(feeds);
-        console.log(results);
-    };
-});
-
-function preprocess(img) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 640;
-    canvas.height = 640;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, 640, 640);
+async function detectFrame() {
+    ctx.drawImage(video, 0, 0, 640, 640);
     const imgData = ctx.getImageData(0, 0, 640, 640);
     const data = imgData.data;
 
@@ -51,5 +42,12 @@ function preprocess(img) {
     inputData.set(green, 640 * 640);
     inputData.set(blue, 2 * 640 * 640);
 
-    return new ort.Tensor('float32', inputData, [1, 3, 640, 640]);
+    const tensor = new ort.Tensor('float32', inputData, [1, 3, 640, 640]);
+    const feeds = { images: tensor };
+    const results = await session.run(feeds);
+    console.log(results);
+
+    requestAnimationFrame(detectFrame);
 }
+
+init();
