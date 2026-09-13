@@ -4,7 +4,6 @@ let canvas;
 let ctx;
 let isProcessing = false;
 
-// Список классов (замените на свои, если у вашей модели другая номенклатура)
 const classNames = ["Класс 0", "Класс 1", "Класс 2"]; 
 
 document.getElementById('downloadBtn').addEventListener('click', async () => {
@@ -122,9 +121,8 @@ async function detectFrame() {
 
             const className = classNames[maxClassId] || `Class ${maxClassId}`;
             
-            ctx.fillStyle = 'lime';
-            ctx.font = 'bold 22px Arial';
-            ctx.fillText(`${className}: ${(maxProb * 100).toFixed(1)}%`, 20, 40);
+            // Вывод текста в специальный блок под кнопкой/видео на странице
+            document.getElementById('result-box').innerText = `${className}: ${(maxProb * 100).toFixed(1)}%`;
 
         } catch (err) {
             console.error(err);
