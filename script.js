@@ -4,6 +4,11 @@ let canvas;
 let ctx;
 let isProcessing = false;
 
+document.getElementById('startBtn').addEventListener('click', async () => {
+    document.getElementById('startBtn').style.display = 'none';
+    await init();
+});
+
 async function init() {
     video = document.createElement('video');
     video.autoplay = true;
@@ -78,5 +83,3 @@ function preprocess(canvasElement) {
 
     return new ort.Tensor('float32', inputData, [1, 3, 640, 640]);
 }
-
-init();
