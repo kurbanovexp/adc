@@ -6,6 +6,7 @@ let isProcessing = false;
 
 document.getElementById('startBtn').addEventListener('click', async () => {
     document.getElementById('startBtn').style.display = 'none';
+    document.getElementById('progress').style.display = 'block';
     await init();
 });
 
@@ -27,8 +28,49 @@ async function init() {
         };
     });
 
-    session = await ort.InferenceSession.create('./model/yolo26n-cls.onnx', { executionProviders: ['wasm'] });
-    detectFrame();
+    const progressDiv = document.getElementById('progress');
+    
+    try {
+        const response = await fetch('./model/yolo26n-cls.onnx');
+        const contentLength = response.headers.get('content-length');
+        
+        if (!contentLength) {
+            progressDiv.textContent = "Загрузка модели...";
+            const buffer = await response.arrayBuffer();
+            progressDiv.textContent = "Инициализация...";
+            session = await ort.InferenceSession.create(buffer, { executionProviders: ['wasm'] });
+        } else {
+            const total = parseInt(contentLength, 10);
+            let loaded = 0;
+            const reader = response.body.getReader();
+            const chunks = [];
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                loaded += value.length;
+                const percent = Math.round((loaded / total) * 100);
+                progressDiv.textContent = `Загрузка модели: ${percent}%`;
+            }
+
+            const buffer = new Uint8Array(loaded);
+            let position = 0;
+            for (let chunk of chunks) {
+                buffer.set(chunk, position);
+                position += chunk.length;
+            }
+
+            progressDiv.textContent = "Инициализация модели...";
+            session = await ort.InferenceSession.create(buffer.buffer, { executionProviders: ['wasm'] });
+        }
+        
+        progressDiv.style.display = 'none';
+        detectFrame();
+    } catch (err) {
+        progressDiv.textContent = "Ошибка загрузки: " + err.message;
+        console.error(err);
+    }
 }
 
 async function detectFrame() {
